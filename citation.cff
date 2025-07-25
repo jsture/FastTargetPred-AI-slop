@@ -1,0 +1,38 @@
+cff-version: 1.2.0
+message: "If you use this software, please cite it using the metadata from this file."
+type: software
+title: "FastTargetPred"
+version: 2.0.0
+date-released: 2025-07-25
+url: "https://github.com/ludovicchaput/FastTargetPred"
+repository-code: "https://github.com/ludovicchaput/FastTargetPred"
+authors:
+  - family-names: "Guillaume"
+    given-names: "Valentin"
+  - family-names: "Chaput"
+    given-names: "Ludovic"
+  - family-names: "Singh"
+    given-names: "Natesh"
+preferred-citation:
+  type: article
+  title: "A new ChEMBL dataset for the similarity-based target fishing engine FastTargetPred: Annotation of an exhaustive list of linear tetrapeptides"
+  authors:
+    - family-names: "Tanwar"
+      given-names: "Shivalika"
+    - family-names: "Auberger"
+      given-names: "Patrick"
+    - family-names: "Gillet"
+      given-names: "Germain"
+    - family-names: "DiPaola"
+      given-names: "Mario"
+    - family-names: "Tsaioun"
+      given-names: "Katya"
+    - family-names: "Villoutreix"
+      given-names: "Bruno O."
+  journal: "Data in Brief"
+  volume: 42
+  year: 2022
+  pages: "108159"
+  doi: "10.1016/j.dib.2022.108159"
+  url: "https://www.sciencedirect.com/science/article/pii/S2352340922003638"
+  issn: "2352-3409"
