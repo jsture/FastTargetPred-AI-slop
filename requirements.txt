@@ -1,0 +1,21 @@
+# FastTargetPred Requirements
+# Install with: pip install -r requirements.txt
+
+# Core dependencies
+numpy>=1.20.0
+matplotlib>=3.4.0
+rdkit>=2022.3.1
+pandas>=1.3.0
+
+# Python 3.8 compatibility
+pathlib2>=2.3.6; python_version<"3.9"
+
+# Optional dependencies for development
+pytest>=6.0
+black>=22.0
+flake8>=4.0
+mypy>=0.910
+
+# Optional dependencies for Jupyter support
+jupyter>=1.0.0
+ipykernel>=6.0.0

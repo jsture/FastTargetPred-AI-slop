@@ -1,0 +1,79 @@
+[build-system]
+requires = ["setuptools>=61.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "fast-target-pred"
+version = "2.0.0"
+description = "Fast target prediction tool for molecular compounds"
+readme = "README.md"
+requires-python = ">=3.8"
+license = {text = "MIT"}
+authors = [
+    {name = "Valentin Guillaume"},
+    {name = "Ludovic Chaput"},
+]
+keywords = ["chemistry", "molecular", "target-prediction", "bioinformatics"]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Science/Research",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.8",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Topic :: Scientific/Engineering :: Chemistry",
+    "Topic :: Scientific/Engineering :: Bio-Informatics",
+]
+dependencies = [
+    "numpy>=1.20.0",
+    "rdkit>=2022.3.1",
+    "pathlib2>=2.3.6; python_version<'3.9'",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=6.0",
+    "black>=22.0",
+    "flake8>=4.0",
+    "mypy>=0.910",
+]
+jupyter = [
+    "jupyter>=1.0.0",
+    "ipykernel>=6.0.0",
+]
+
+[project.urls]
+Homepage = "https://github.com/ludovicchaput/FastTargetPred"
+Repository = "https://github.com/ludovicchaput/FastTargetPred.git"
+Issues = "https://github.com/ludovicchaput/FastTargetPred/issues"
+
+[project.scripts]
+fasttargetpred = "FastTargetPred:main"
+fasttargetpred-workup = "FastTargetPred_workup:main"
+
+[tool.setuptools]
+py-modules = ["FastTargetPred", "FastTargetPred_workup"]
+packages = ["src"]
+
+[tool.setuptools.package-data]
+"*" = ["*.c", "*.h", "*.bfp", "*.tlt", "*.csv"]
+
+[tool.black]
+line-length = 88
+target-version = ['py38']
+
+[tool.mypy]
+python_version = "3.8"
+warn_return_any = true
+warn_unused_configs = true
+disallow_untyped_defs = true
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+python_files = ["test_*.py"]
+python_classes = ["Test*"]
+python_functions = ["test_*"]

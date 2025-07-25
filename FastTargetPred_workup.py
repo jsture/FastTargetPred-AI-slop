@@ -1,5 +1,6 @@
-__version__ = "1.1"
+__version__ = "2.0.0"
 
+# Python 3.8+ Built-in packages
 from abc import ABC, abstractmethod
 from pathlib import Path
 from io import BytesIO
@@ -11,6 +12,7 @@ import re
 import argparse
 from csv import DictReader
 
+
 class ARGUMENTS(object):
     CSV_INPUT = "i"
     SDF_INPUT = "sdf"
@@ -21,117 +23,162 @@ class ARGUMENTS(object):
     SAVE_CHEMBL_STRUCT = "s"
     SPLIT_QUERY_COMPOUNDS = "c"
     ARG_LIST = [
-        CSV_INPUT
-        , SDF_INPUT
-        , HTML_OUTPUT
-        , SCORE_FILTER
-        , PLOT_STATS
-        , CLASS_NUMBER
-        , SAVE_CHEMBL_STRUCT
-        , SPLIT_QUERY_COMPOUNDS
+        CSV_INPUT,
+        SDF_INPUT,
+        HTML_OUTPUT,
+        SCORE_FILTER,
+        PLOT_STATS,
+        CLASS_NUMBER,
+        SAVE_CHEMBL_STRUCT,
+        SPLIT_QUERY_COMPOUNDS,
     ]
+
 
 HTM_LINK_TEMPLATE = """<a href="{link}" target="blank">{name}</a>"""
 
-def render_classic_str(s: str, **kwargs): return s
-def render_classic_float(s: str, **kwargs): return "{:0.02f}".format(float(s))
+
+def render_classic_str(s: str, **kwargs):
+    return s
+
+
+def render_classic_float(s: str, **kwargs):
+    return "{:0.02f}".format(float(s))
+
+
 def render_query_mol(s: str, img_provider=None, **kwargs):
     if img_provider is None:
         return s
     else:
         return img_provider.get_img(s) + "<div>{}</div>".format(s)
+
+
 def render_chembl_structure(s: str, arguments=None, **kwargs):
     url = "https://www.ebi.ac.uk/chembl/api/data/image/{}.svg".format(s)
     img_markup = ""
     if arguments is not None and arguments.get(ARGUMENTS.SAVE_CHEMBL_STRUCT, False):
-        try :
+        try:
             with request.urlopen(url, timeout=60) as response:
                 response_bytes = response.read()
-                b64_str = base64.b64encode(response_bytes).decode('ASCII')
+                b64_str = base64.b64encode(response_bytes).decode("ASCII")
                 img_markup = f"<img src='data:image/png;base64,{b64_str}'/>"
         except error.URLError:
             print("CHEMBL topological formula fetching failed on {}".format(s))
     else:
         img_markup = f"<img src='{url.format(s)}'/>"
 
-
     base_url_template = "https://www.ebi.ac.uk/chembl/compound_report_card/{}/"
 
     s = re.sub(
-        "CHEMBL[0-9]+"
-        , lambda match : HTM_LINK_TEMPLATE.format(name=match.group(0), link=base_url_template.format(match.group(0)))
-        , s
+        "CHEMBL[0-9]+",
+        lambda match: HTM_LINK_TEMPLATE.format(
+            name=match.group(0), link=base_url_template.format(match.group(0))
+        ),
+        s,
     )
 
     return "{}<div>{}</div>".format(img_markup, s)
+
+
 def render_reactome_link(s: str, **kwargs):
     base_url_template = "https://reactome.org/PathwayBrowser/#/{}"
     s = re.sub(
-        """ *(?P<reactome_id>[a-zA-Z]+-[a-zA-Z]+-(?P<reactome_number>[0-9]+)) *"""
-        , lambda m: HTM_LINK_TEMPLATE.format(link=base_url_template.format(m.group("reactome_id")), name=m.group("reactome_number"))
-        , s
+        """ *(?P<reactome_id>[a-zA-Z]+-[a-zA-Z]+-(?P<reactome_number>[0-9]+)) *""",
+        lambda m: HTM_LINK_TEMPLATE.format(
+            link=base_url_template.format(m.group("reactome_id")),
+            name=m.group("reactome_number"),
+        ),
+        s,
     )
-    s = s.replace(';', '</br>')
+    s = s.replace(";", "</br>")
     return s
 
-    return "</br>".join([HTM_LINK_TEMPLATE.format(link="https://reactome.org/PathwayBrowser/#/{}".format(x), name="Reactome") for x in s.split(";") if x != ""])
+    return "</br>".join(
+        [
+            HTM_LINK_TEMPLATE.format(
+                link="https://reactome.org/PathwayBrowser/#/{}".format(x),
+                name="Reactome",
+            )
+            for x in s.split(";")
+            if x != ""
+        ]
+    )
+
+
 def render_gene_ontology(s: str, **kwargs):
     # Warning : char ':' must be translated to %3A for hotm query
-    base_url_template = "http://amigo.geneontology.org/amigo/medial_search?q={}&searchtype=all"
+    base_url_template = (
+        "http://amigo.geneontology.org/amigo/medial_search?q={}&searchtype=all"
+    )
+
     def get_markup(s):
-        match = re.match(
-            """(?P<name>[^\[\]]*) \[(?P<link>GO:[0-9]*)\]"""
-            , s
-        )
+        match = re.match("""(?P<name>[^\[\]]*) \[(?P<link>GO:[0-9]*)\]""", s)
         if match:
             link = base_url_template.format(match.group("link").replace(":", "%3A"))
-            return HTM_LINK_TEMPLATE.format(link=link, name=match.group('name'))
+            return HTM_LINK_TEMPLATE.format(link=link, name=match.group("name"))
         else:
             return ""
 
-
     return "</br>".join([get_markup(x) for x in s.split(";")])
+
+
 def render_involvement_in_disease(s: str, **kwargs):
     # format MIM strings
     base_url_template = "https://www.omim.org/entry/{}"
     s = re.sub(
-        """(?P<disease_name>DISEASE:[^\[\]]*) (?P<mim_str>\[MIM:(?P<mim_num>[0-9]+)\])"""
-        , lambda match: HTM_LINK_TEMPLATE.format(link=base_url_template.format(match.group("mim_num")), name=match.group("disease_name"))
-        , s
+        """(?P<disease_name>DISEASE:[^\[\]]*) (?P<mim_str>\[MIM:(?P<mim_num>[0-9]+)\])""",
+        lambda match: HTM_LINK_TEMPLATE.format(
+            link=base_url_template.format(match.group("mim_num")),
+            name=match.group("disease_name"),
+        ),
+        s,
     )
 
     # format PUBMED strings
     base_url_template = "https://www.ncbi.nlm.nih.gov/pubmed?cmd=search&term={}"
     s = re.sub(
-        """PubMed:(?P<pubmed_num>[0-9]+)"""
-        , lambda x:HTM_LINK_TEMPLATE.format(link=base_url_template.format(x.group("pubmed_num")), name="PubMed")
-        , s
+        """PubMed:(?P<pubmed_num>[0-9]+)""",
+        lambda x: HTM_LINK_TEMPLATE.format(
+            link=base_url_template.format(x.group("pubmed_num")), name="PubMed"
+        ),
+        s,
     )
 
     # format ECO strings
     base_url_template = "https://www.ebi.ac.uk/QuickGO/term/{}"
     s = re.sub(
-        """(?<!/)(?P<eco_num>ECO:[0-9]+)(?!")"""
-        ,  lambda x:(HTM_LINK_TEMPLATE.format(link=base_url_template.format(x.group("eco_num")), name="ECO"))
-        , s
+        """(?<!/)(?P<eco_num>ECO:[0-9]+)(?!")""",
+        lambda x: (
+            HTM_LINK_TEMPLATE.format(
+                link=base_url_template.format(x.group("eco_num")), name="ECO"
+            )
+        ),
+        s,
     )
 
-
     return s
+
+
 def render_chembl_target(s: str, **kwargs):
     base_url_template = "https://www.ebi.ac.uk/chembl/target_report_card/{}/"
     s = re.sub(
-        "CHEMBL[0-9]+"
-        , lambda match : HTM_LINK_TEMPLATE.format(name=match.group(0), link=base_url_template.format(match.group(0)))
-        , s
+        "CHEMBL[0-9]+",
+        lambda match: HTM_LINK_TEMPLATE.format(
+            name=match.group(0), link=base_url_template.format(match.group(0))
+        ),
+        s,
     )
     return s
+
+
 def render_uniprot_id(s: str, **kwargs):
     base_url_template = "https://www.uniprot.org/uniprot/{}"
     s = re.sub(
-        "(?P<uniprot_id>.*)"
-        , lambda match : HTM_LINK_TEMPLATE.format(name=match.group('uniprot_id'), link=base_url_template.format(match.group('uniprot_id')))
-        , s
+        "(?P<uniprot_id>.*)",
+        lambda match: HTM_LINK_TEMPLATE.format(
+            name=match.group("uniprot_id"),
+            link=base_url_template.format(match.group("uniprot_id")),
+        ),
+        s,
     )
     return s
 
@@ -152,38 +199,38 @@ class CSVFIELDS(object):
     Gene_ontology = "Gene ontology (biological process)"
     Reactome = "Cross-reference (Reactome)"
     field_list = (
-        query_name
-        , database_molecule_id
+        query_name,
+        database_molecule_id,
         # , target_id  # This one is quite useless actually
-        , score
-        , Entry
-        , Entry_name
-        , Status
-        , Protein_names
-        , Gene_names
-        , Organism
-        , CHEMBL
-        , Involvement_in_disease
-        , Gene_ontology
-        , Reactome
+        score,
+        Entry,
+        Entry_name,
+        Status,
+        Protein_names,
+        Gene_names,
+        Organism,
+        CHEMBL,
+        Involvement_in_disease,
+        Gene_ontology,
+        Reactome,
     )
     field_display_function = {
-        query_name: render_query_mol
+        query_name: render_query_mol,
         # query_name: render_classic_str
-        , database_molecule_id: render_chembl_structure
+        database_molecule_id: render_chembl_structure,
         # , database_molecule_id: render_classic_str
-        , target_id: render_classic_str
-        , score: render_classic_float
-        , Entry: render_uniprot_id
-        , Entry_name: render_classic_str
-        , Status: render_classic_str
-        , Protein_names: render_classic_str
-        , Gene_names: render_classic_str
-        , Organism: render_classic_str
-        , CHEMBL: render_chembl_target
-        , Involvement_in_disease: render_involvement_in_disease
-        , Gene_ontology: render_gene_ontology
-        , Reactome: render_reactome_link
+        target_id: render_classic_str,
+        score: render_classic_float,
+        Entry: render_uniprot_id,
+        Entry_name: render_classic_str,
+        Status: render_classic_str,
+        Protein_names: render_classic_str,
+        Gene_names: render_classic_str,
+        Organism: render_classic_str,
+        CHEMBL: render_chembl_target,
+        Involvement_in_disease: render_involvement_in_disease,
+        Gene_ontology: render_gene_ontology,
+        Reactome: render_reactome_link,
     }
 
 
@@ -193,13 +240,15 @@ def read_file(file_name: str) -> list:
     if not file.is_file():
         raise FileNotFoundError
 
-    l = []
-    with file.open('r') as f:
+    results = []
+    with file.open("r") as f:
         reader = DictReader(f, delimiter="\t")
         for row in reader:
-            l.append({field: row.get(field, None) for field in CSVFIELDS.field_list})
+            results.append(
+                {field: row.get(field, None) for field in CSVFIELDS.field_list}
+            )
 
-    return sorted(l, key=(lambda x: x[CSVFIELDS.score]), reverse=True)
+    return sorted(results, key=(lambda x: x[CSVFIELDS.score]), reverse=True)
 
 
 def get_header():
@@ -217,7 +266,7 @@ h1 {
 }
 table {
     border-collapse: collapse;
-    
+
 }
 td {
     position: relative;
@@ -272,16 +321,16 @@ table.tablestyle-1 tbody>*:last-child td:first-child {
 table.tablestyle-1 tbody>*:last-child td:last-child {
   border-bottom-right-radius:10px;
 }
-    
+
 .info-box {
   display: flex;
   flex-direction: row;
   align-items: center;
   justify-content: center;
-  
+
 }
-    
-    
+
+
     </style>"""
     js = """
     <script>
@@ -290,7 +339,7 @@ table.tablestyle-1 tbody>*:last-child td:last-child {
   version 2
   7th April 2007
   Stuart Langridge, http://www.kryogenix.org/code/browser/sorttable/
-  
+
 */
 
 
@@ -795,7 +844,11 @@ def get_info(row_list, arguments):
 
 def filter_rows(row_list, arguments):
     if arguments[ARGUMENTS.SCORE_FILTER]:
-        print("Filtering score smaller than {} ...".format(arguments[ARGUMENTS.SCORE_FILTER]))
+        print(
+            "Filtering score smaller than {} ...".format(
+                arguments[ARGUMENTS.SCORE_FILTER]
+            )
+        )
         assert isinstance(arguments[ARGUMENTS.SCORE_FILTER], float)
         num_field = 0
         for i, row in enumerate(row_list):
@@ -803,13 +856,13 @@ def filter_rows(row_list, arguments):
                 num_field = i - 1
                 break
 
-        return row_list[:num_field + 1]
+        return row_list[: num_field + 1]
     else:
         return row_list
 
 
 class WriteManager(ABC):
-    def __init__(self,arguments):
+    def __init__(self, arguments):
         self.file = Path(arguments[ARGUMENTS.HTML_OUTPUT])
         self.arguments = arguments
         self._beginning = "<html>"
@@ -823,25 +876,30 @@ class WriteManager(ABC):
             self.write_function_kwarg["img_provider"] = ImageProvider()
 
     @abstractmethod
-    def write_header(self): pass
+    def write_header(self):
+        pass
 
     @abstractmethod
-    def write_title(self): pass
+    def write_title(self):
+        pass
 
     @abstractmethod
-    def write_info(self, row_list): pass
+    def write_info(self, row_list):
+        pass
 
     @abstractmethod
-    def write_body(self, row_list): pass
+    def write_body(self, row_list):
+        pass
 
     @abstractmethod
-    def write_end(self): pass
+    def write_end(self):
+        pass
 
 
 class WriteManager1(WriteManager):
     def __init__(self, *args, **kwargs):
-        super().__init__( *args, **kwargs)
-        self.f = open(str(self.file), 'w')
+        super().__init__(*args, **kwargs)
+        self.f = open(str(self.file), "w")
         self.f.write(self._beginning)
 
     def write_header(self):
@@ -868,14 +926,20 @@ class WriteManager1(WriteManager):
         self.f.write("</thead><tbody>")
 
         if self.arguments.get(ARGUMENTS.SAVE_CHEMBL_STRUCT, False):
-            print("Querying Chembl server to retrieve structures. This step might be long ...")
+            print(
+                "Querying Chembl server to retrieve structures. This step might be long ..."
+            )
         else:
             print("Writing results table ...")
 
         for row in row_list:
             s_temp1 = ""
             for field in CSVFIELDS.field_list:
-                s_temp1 += field_htm.format(CSVFIELDS.field_display_function[field](row[field], **self.write_function_kwarg))
+                s_temp1 += field_htm.format(
+                    CSVFIELDS.field_display_function[field](
+                        row[field], **self.write_function_kwarg
+                    )
+                )
             self.f.write(row_htm.format(s_temp1))
 
         self.f.write("</tbody>")
@@ -912,7 +976,7 @@ class WriteManager2(WriteManager):
         s_temp2 = ""
         for field in CSVFIELDS.field_list:
             s_temp2 += "<th>{}</th>".format(field)
-        self._template[1] += (row_htm.format(s_temp2))
+        self._template[1] += row_htm.format(s_temp2)
         self._template[1] += "</thead><tbody>"
         self._template[2] += "</tbody>"
         self._template[2] += "</table>"
@@ -934,7 +998,11 @@ class WriteManager2(WriteManager):
         html_pseudofile = Path(self.arguments[ARGUMENTS.HTML_OUTPUT])
         dir = Path(html_pseudofile.parent, html_pseudofile.stem)
         if dir.exists() and not dir.is_dir():
-            raise FileExistsError("Attempted to create folder named {} but name already taken.".format(dir))
+            raise FileExistsError(
+                "Attempted to create folder named {} but name already taken.".format(
+                    dir
+                )
+            )
         elif not dir.exists():
             dir.mkdir()
 
@@ -946,11 +1014,18 @@ class WriteManager2(WriteManager):
                 s_temp1 = ""
                 for field in CSVFIELDS.field_list:
                     s_temp1 += field_htm.format(
-                        CSVFIELDS.field_display_function[field](row[field], **self.write_function_kwarg))
+                        CSVFIELDS.field_display_function[field](
+                            row[field], **self.write_function_kwarg
+                        )
+                    )
                 table_body += row_htm.format(s_temp1)
 
             file.write_text(
-                self._template[0] + query_compound_name + self._template[1] + table_body + self._template[2]
+                self._template[0]
+                + query_compound_name
+                + self._template[1]
+                + table_body
+                + self._template[2]
             )
 
     def write_end(self):
@@ -978,29 +1053,61 @@ def main(arguments: dict):
     f.write_end()
 
 
-
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description="Script version {}. Will process csv ouptut from FastTargetPred to build a single html file.".format(__version__))
+    parser = argparse.ArgumentParser(
+        description="Script version {}. Will process csv ouptut from FastTargetPred to build a single html file.".format(
+            __version__
+        )
+    )
     mandatory_arguments = parser.add_argument_group(title="Mandatory arguments")
-    mandatory_arguments.add_argument(f"-{ARGUMENTS.CSV_INPUT}", help="Path to the output csv file of FastTargetPred.")
-    mandatory_arguments.add_argument(f"-{ARGUMENTS.HTML_OUTPUT}", help="Path to the HTML report.", default="out_{}.html".format(datetime.now().isoformat().replace(':',' ')))
+    mandatory_arguments.add_argument(
+        f"-{ARGUMENTS.CSV_INPUT}", help="Path to the output csv file of FastTargetPred."
+    )
+    mandatory_arguments.add_argument(
+        f"-{ARGUMENTS.HTML_OUTPUT}",
+        help="Path to the HTML report.",
+        default="out_{}.html".format(datetime.now().isoformat().replace(":", " ")),
+    )
     optional_arguments = parser.add_argument_group(title="Additional arguments")
-    optional_arguments.add_argument(f"-{ARGUMENTS.SDF_INPUT}", help="Path to the SD file used as input of FastTargetPred. Used for image generation.\nWarning : RDKit is required for this to work.")
-    optional_arguments.add_argument(f"-{ARGUMENTS.SCORE_FILTER}", help="Score Filtering value.\nUsefull if you want a smaller or cleaner file.", type=float)
-    optional_arguments.add_argument(f"-{ARGUMENTS.PLOT_STATS}", help="Will analyse data and plot a few metrics at the top of the html report.", action='store_true')
+    optional_arguments.add_argument(
+        f"-{ARGUMENTS.SDF_INPUT}",
+        help="Path to the SD file used as input of FastTargetPred. Used for image generation.\nWarning : RDKit is required for this to work.",
+    )
+    optional_arguments.add_argument(
+        f"-{ARGUMENTS.SCORE_FILTER}",
+        help="Score Filtering value.\nUsefull if you want a smaller or cleaner file.",
+        type=float,
+    )
+    optional_arguments.add_argument(
+        f"-{ARGUMENTS.PLOT_STATS}",
+        help="Will analyse data and plot a few metrics at the top of the html report.",
+        action="store_true",
+    )
     # optional_arguments.add_argument(f"-{ARGUMENTS.SAVE_CHEMBL_STRUCT}", help="Save Chembl molecule structure into the output file.\nWill take longer to create and will create a bigger file, but allow offline consultation.", action='store_true')
-    optional_arguments.add_argument(f"-{ARGUMENTS.CLASS_NUMBER}", help="Class Number.\nWill change the frequency distribution graph class width in order to have the desired number of class.", type=int, default=20)
-    optional_arguments.add_argument(f"-{ARGUMENTS.SPLIT_QUERY_COMPOUNDS}", help="Split Query Compounds.\nWill generate one file per query compound and put them all in a folder named after your seleted output.", action='store_true')
+    optional_arguments.add_argument(
+        f"-{ARGUMENTS.CLASS_NUMBER}",
+        help="Class Number.\nWill change the frequency distribution graph class width in order to have the desired number of class.",
+        type=int,
+        default=20,
+    )
+    optional_arguments.add_argument(
+        f"-{ARGUMENTS.SPLIT_QUERY_COMPOUNDS}",
+        help="Split Query Compounds.\nWill generate one file per query compound and put them all in a folder named after your seleted output.",
+        action="store_true",
+    )
 
     namespace = parser.parse_args()
-    argument_dict = {arg:namespace.__getattribute__(arg)  for arg in ARGUMENTS.ARG_LIST if hasattr(namespace, arg)}
+    argument_dict = {
+        arg: namespace.__getattribute__(arg)
+        for arg in ARGUMENTS.ARG_LIST
+        if hasattr(namespace, arg)
+    }
 
     if argument_dict[ARGUMENTS.SDF_INPUT]:
         try:
             from rdkit import Chem
-            from rdkit.Chem.Draw import MolToImage
-            from rdkit.Chem.Draw.MolDrawing import DrawingOptions
             from rdkit.Chem.Draw import rdMolDraw2D
+
             d2d = rdMolDraw2D.MolDraw2DCairo(300, 300)
             opts = d2d.drawOptions()
             opts.clearBackground = False
@@ -1011,7 +1118,7 @@ if __name__ == "__main__":
                     molsup = Chem.SDMolSupplier(argument_dict[ARGUMENTS.SDF_INPUT])
                     for mol in molsup:
                         if mol:
-                            name = mol.GetProp('_Name')
+                            name = mol.GetProp("_Name")
                             if name not in self.image_dict:
                                 self.image_dict[name] = self._get_img_html_markup(mol)
 
@@ -1023,7 +1130,7 @@ if __name__ == "__main__":
                     d2d.FinishDrawing()
                     im_data = d2d.GetDrawingText()
                     b64_str = base64.b64encode(im_data).decode()
-                    data_url = 'data:image/png;base64,' + b64_str
+                    data_url = "data:image/png;base64," + b64_str
                     htm = """<img src="{}"/> """.format(data_url)
                     return htm
 
@@ -1037,18 +1144,22 @@ if __name__ == "__main__":
                         return self._get_empty_img_html_markup(mol_name)
 
         except ModuleNotFoundError:
-            print("It appears you don't have Rdkit and Pycairo installed. Printing query structure will only work with these.")
+            print(
+                "It appears you don't have Rdkit and Pycairo installed. Printing query structure will only work with these."
+            )
+
             class ImageProvider(object):
-                def get_img(self, s): return ""
+                def get_img(self, s):
+                    return ""
 
     if argument_dict[ARGUMENTS.PLOT_STATS]:
         try:
             import numpy as np
             from matplotlib.figure import Figure
-            from matplotlib.text import Text
-            from statistics import mean
         except ModuleNotFoundError:
-            print("It appears you don't have Numpy and Matplotlib installed. Printing stats will only work with it.")
+            print(
+                "It appears you don't have Numpy and Matplotlib installed. Printing stats will only work with it."
+            )
             exit()
 
         def get_plot_stats(row_list, arguments):
@@ -1060,27 +1171,35 @@ if __name__ == "__main__":
             buf = BytesIO()
 
             ax.hist(score_array, bins=arguments[ARGUMENTS.CLASS_NUMBER])
-            ax.set_title('Hits score distribution')
+            ax.set_title("Hits score distribution")
             ax.set_ylabel("Hit count")
             ax.set_xlabel("Score")
-            if arguments[ARGUMENTS.SCORE_FILTER]:  # In case a threshold value has been specified, show where it cut the data
+            if arguments[
+                ARGUMENTS.SCORE_FILTER
+            ]:  # In case a threshold value has been specified, show where it cut the data
                 y_lim = ax.get_ylim()
                 ax.set_ylim(y_lim)
-                ax.plot((arguments[ARGUMENTS.SCORE_FILTER], arguments[ARGUMENTS.SCORE_FILTER]), y_lim)
+                ax.plot(
+                    (
+                        arguments[ARGUMENTS.SCORE_FILTER],
+                        arguments[ARGUMENTS.SCORE_FILTER],
+                    ),
+                    y_lim,
+                )
                 ax.annotate(
-                    "Filter\nthreshold"
-                    , xy=(arguments[ARGUMENTS.SCORE_FILTER], y_lim[1]*0.7)
-                    , xytext=(arguments[ARGUMENTS.SCORE_FILTER]*1.05, 0.9*y_lim[1])
-                    , arrowprops=dict(facecolor='black', shrink=0.05)
-                    , horizontalalignment='left'
-                    , verticalalignment='center'
+                    "Filter\nthreshold",
+                    xy=(arguments[ARGUMENTS.SCORE_FILTER], y_lim[1] * 0.7),
+                    xytext=(arguments[ARGUMENTS.SCORE_FILTER] * 1.05, 0.9 * y_lim[1]),
+                    arrowprops=dict(facecolor="black", shrink=0.05),
+                    horizontalalignment="left",
+                    verticalalignment="center",
                 )
 
             fig.savefig(buf, format="png")
             data = base64.b64encode(buf.getbuffer()).decode("ascii")
-            html_str = f"<div class='stats'><img src='data:image/png;base64,{data}'/></div>"
+            html_str = (
+                f"<div class='stats'><img src='data:image/png;base64,{data}'/></div>"
+            )
             return html_str
-
-
 
     main(argument_dict)

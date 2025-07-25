@@ -1,0 +1,2 @@
+# This file ensures the out/ directory exists in the repository
+# The out/ directory is used for temporary output files during FastTargetPred execution
