@@ -126,7 +126,7 @@ def quick_analysis_example():
     print("⚡ Quick Analysis Example")
     print("=" * 60)
 
-    from results_analyzer import quick_analysis
+    from results_analyzer import quick_analysis  # type: ignore
 
     # Quick analysis of ibuprofen
     report = quick_analysis(
