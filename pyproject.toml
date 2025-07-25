@@ -32,6 +32,7 @@ dependencies = [
     "numpy>=1.20.0",
     "rdkit>=2022.3.1",
     "pathlib2>=2.3.6; python_version<'3.9'",
+    "pre-commit>=3.5.0",
 ]
 
 [project.optional-dependencies]
@@ -52,12 +53,12 @@ Repository = "https://github.com/ludovicchaput/FastTargetPred.git"
 Issues = "https://github.com/ludovicchaput/FastTargetPred/issues"
 
 [project.scripts]
-fasttargetpred = "FastTargetPred:main"
-fasttargetpred-workup = "FastTargetPred_workup:main"
+fasttargetpred = "src.cli:fasttargetpred_main"
+fasttargetpred-workup = "src.cli:fasttargetpred_workup_main"
 
-[tool.setuptools]
-py-modules = ["FastTargetPred", "FastTargetPred_workup"]
-packages = ["src"]
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["src*"]
 
 [tool.setuptools.package-data]
 "*" = ["*.c", "*.h", "*.bfp", "*.tlt", "*.csv"]

@@ -5,11 +5,26 @@ from pathlib import Path
 import sys
 import argparse
 from typing import Any
-from src.misc import is_mac, is_linux, is_windows
 
 
 def compile_extension(args: Any) -> None:
     """Compile the C extension for fingerprint processing."""
+    try:
+        # Import here to avoid circular imports during package installation
+        from src.misc import is_mac, is_linux, is_windows
+    except ImportError:
+        # Fallback platform detection if src.misc is not available
+        import platform
+
+        def is_mac():
+            return platform.system() == "Darwin"
+
+        def is_linux():
+            return platform.system() == "Linux"
+
+        def is_windows():
+            return platform.system() == "Windows"
+
     include_dir = Path(args.python_h).as_posix()
     c_source = args.s
     print(f"Directory chosen for Python.h: {include_dir}")

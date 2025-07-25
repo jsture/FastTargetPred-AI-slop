@@ -3,7 +3,31 @@ import typing
 from sys import argv
 from pathlib import Path
 
-BASE_PATH = str(Path(argv[0]).resolve().parent)
+# Handle different execution contexts (direct execution vs installed package)
+if "fasttargetpred" in argv[0] and "bin" in argv[0]:
+    # Running from installed package - find the project root
+    # Look for the project root by finding the directory containing db/
+    current_path = Path.cwd()
+    project_root = None
+
+    # First check current directory
+    if (current_path / "db").exists():
+        project_root = current_path
+    else:
+        # Search up the directory tree
+        for parent in current_path.parents:
+            if (parent / "db").exists():
+                project_root = parent
+                break
+
+    if project_root is None:
+        # Fallback: assume we're in a FastTargetPred directory
+        project_root = current_path
+
+    BASE_PATH = str(project_root)
+else:
+    # Running directly from project directory
+    BASE_PATH = str(Path(argv[0]).resolve().parent)
 # Retrieve App install folder
 BASE_TEMP_DIR = BASE_PATH + "/" + "temp"
 # Default database path
